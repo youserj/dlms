@@ -37,9 +37,3 @@ func (c *Integer) SetFromBuffer(buf bytes.Buffer)(n int, err error){
 	}
 	return
 }
-
-// read encode from nulldate to byte-buffer
-func (c *Integer) WriteToBuffer(buf bytes.Buffer)(n int, err error){
-	n, err = buf.Write(c.Encode())
-	return
-}

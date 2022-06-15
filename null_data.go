@@ -22,9 +22,3 @@ func (c NullData) Encode() (ret []byte) {
 func (c *NullData) SetFromBuffer(buf bytes.Buffer) (n int, err error) {
 	return read_tag(c.TAG(), buf)
 }
-
-// read encode from nulldate to byte-buffer
-func (c *NullData) WriteToBuffer(buf bytes.Buffer) (n int, err error) {
-	n, err = buf.Write(c.Encode())
-	return
-}

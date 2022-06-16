@@ -8,13 +8,13 @@ import (
 
 func TestNullData(t *testing.T) {
 	buf := new(bytes.Buffer)
-	value := NullData{}
+	value := new(NullData)
 	expect := []byte{0}
 	got := value.Encode()
 	var n int
 
 	if !reflect.DeepEqual(expect, got) {
-		t.Errorf("wrong encode. got %b, expected %b", got, expect)
+		t.Errorf("wrong encode. got %d, expected %d", got, expect)
 	}
 	n, _ = CDTtoBuffer(value, buf)
 	if n != 1 {
@@ -28,13 +28,15 @@ func TestNullData(t *testing.T) {
 
 func TestInteger(t *testing.T) {
 	buf := new(bytes.Buffer)
-	value := Integer{1}
+	value := new(Integer)
+	*value = 1
 	expect := []byte{15, 1}
+	
+	// value.Set([]byte{2,4,5})
 	got := value.Encode()
 	var n int
-
 	if !reflect.DeepEqual(expect, got) {
-		t.Errorf("wrong encode. got %b, expected %b", got, expect)
+		t.Errorf("wrong encode. got %d, expected %d", got, expect)
 	}
 	n, _ = CDTtoBuffer(value, buf)
 	if n != 2 {
@@ -43,5 +45,10 @@ func TestInteger(t *testing.T) {
 		t.Errorf("expected length 2, got %d", buf.Len())
 	}else{
 		t.Logf("buffer: %v", buf.Bytes())
+	}
+	*value = 0
+	BufferToCDT(value, buf)
+	if buf.Len() != 0{
+		t.Error("Buffer not empty")
 	}
 }

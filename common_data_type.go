@@ -12,6 +12,8 @@ func Version() string {
 type CDT interface{
 	TAG() byte
 	Encode() (ret []byte)
+	ContentsLen() int
+	Set([]byte) (err error)
 }
 
 // write CDT encode to byte-buffer
@@ -20,8 +22,25 @@ func CDTtoBuffer(c CDT, buf *bytes.Buffer)(n int, err error){
 	return
 }
 
+func BufferToCDT(c CDT, buf *bytes.Buffer)(n int, err error){
+	n, err = read_tag(c.TAG(), buf)
+	if err != nil{
+		// error
+	} else{
+		data := make([]byte, c.ContentsLen())
+		n, err = buf.Read(data)
+		if err != nil{
+			// error
+		} else{
+			n++
+			c.Set(data)
+		}
+	}
+	return
+}
+
 // read expected tag from buffer
-func read_tag(tag byte, buf bytes.Buffer)(n int, err error){
+func read_tag(tag byte, buf *bytes.Buffer)(n int, err error){
 	var read_tag byte
 	read_tag, err = buf.ReadByte()
 	if err != nil{
@@ -32,4 +51,3 @@ func read_tag(tag byte, buf bytes.Buffer)(n int, err error){
 	}
 	return
 }
-

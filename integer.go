@@ -1,39 +1,27 @@
 package common_data_type
 
-import (
-	"bytes"
-)
+type Integer int8
 
-type Integer struct{
-	value int8
-}
-
-func (Integer) TAG()byte{
+func (*Integer) TAG()byte{
 	return 15
 }
 
 // contents length
-func (Integer) Len()int{
+func (*Integer) ContentsLen()int{
 	return 1
 }
 
 func (c Integer) Contents()(ret []byte){
-	ret = []byte{byte(c.value)}
+	ret = []byte{byte(c)}
 	return
 }
 
-func (c Integer) Encode()(ret []byte){
-	ret = []byte{c.TAG(), byte(c.value)}
+func (c *Integer) Encode()(ret []byte){
+	ret = []byte{c.TAG(), byte(*c)}
 	return
 }
 
-func (c *Integer) SetFromBuffer(buf bytes.Buffer)(n int, err error){
-	n, err = read_tag(c.TAG(), buf)
-	if err != nil{
-		data := make([]byte, c.Len())
-		n, err = buf.Read(data)
-		n++
-		return
-	}
+func (c *Integer) Set(value []byte)(err error){
+	*c = Integer(value[0])
 	return
 }

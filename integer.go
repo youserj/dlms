@@ -6,7 +6,6 @@ func (*Integer) TAG()byte{
 	return 15
 }
 
-// contents length
 func (*Integer) ContentsLen()int{
 	return 1
 }

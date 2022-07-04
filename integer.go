@@ -1,26 +1,43 @@
 package common_data_type
 
-type Integer int8
+import (
+	"bytes"
+)
 
-func (*Integer) TAG()byte{
+type Integer struct {
+	contents byte
+}
+
+func (*Integer) TAG() byte {
 	return 15
 }
 
-func (*Integer) ContentsLen()int{
+func (*Integer) ContentsLen() uint32 {
 	return 1
 }
 
-func (c Integer) Contents()(ret []byte){
-	ret = []byte{byte(c)}
+func (c *Integer) Contents() []byte {
+	return []byte{c.contents}
+}
+
+func (c *Integer) Encode() []byte {
+	return []byte{c.TAG(), c.contents}
+}
+
+func (c *Integer) Set(buf *bytes.Buffer) error {
+	return SetOneByte(c, buf)
+} 
+
+func (c *Integer) SetFromInt8(value int8) (err error) {
+	c.contents = byte(value)
 	return
 }
 
-func (c *Integer) Encode()(ret []byte){
-	ret = []byte{c.TAG(), byte(*c)}
+func (c *Integer) SetFromByte(value byte) (err error) {
+	c.contents = byte(value)
 	return
 }
 
-func (c *Integer) Set(value []byte)(err error){
-	*c = Integer(value[0])
-	return
+func (c Integer) Decode() int8 {
+	return int8(c.contents)
 }

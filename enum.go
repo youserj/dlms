@@ -1,43 +1,52 @@
 package common_data_type
 
-import "fmt"
+import (
+	"bytes"
+	"fmt"
+)
 
-type Enum byte
+type Enum struct{
+	contents byte
+}
 
 func (*Enum) TAG() byte {
 	return 22
 }
 
-func (*Enum) ContentsLen() int {
+func (*Enum) ContentsLen() uint32 {
 	return 1
 }
 
-func (c Enum) Contents() (ret []byte) {
-	ret = []byte{byte(c)}
+func (c *Enum) Contents() (ret []byte) {
+	ret = []byte{c.contents}
 	return
 }
 
 func (c *Enum) Encode() (ret []byte) {
-	ret = []byte{c.TAG(), byte(*c)}
+	ret = []byte{c.TAG(), byte(c.contents)}
 	return
 }
 
-func (c *Enum) Set(value []byte) (err error) {
-	*c = Enum(value[0])
+func (c *Enum) Set(buf *bytes.Buffer) error {
+	return SetOneByte(c, buf)
+}
+
+func (c *Enum) SetFromByte(value byte)(err error){
+	c.contents = value
 	return
 }
 
 // Todo: separate to other module
-type Unit struct {
+type UnitEnum struct {
 	Enum
 }
 
-func (c *Unit) Set(value []byte) (err error) {
-	switch value[0]{
+func (c *UnitEnum) SetFromByte(value byte) (err error) {
+	switch value{
 	case 58, 59:
-		err = fmt.Errorf("%d is reserved", value[0])
+		err = fmt.Errorf("%d is reserved", value)
 	default: 
-		*c = Unit{Enum(value[0])}
+		c.contents = value
 	}
 	return
 }

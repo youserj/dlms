@@ -31,7 +31,7 @@ func decode_length(buf *bytes.Buffer) (uint32, error) {
 	tmp, err = buf.ReadByte()
 	length = uint32(tmp)
 	if err != nil {
-		return 0, fmt.Errorf("in reading length; %s", err)
+		return 0, fmt.Errorf("in reading length [%w]", err)
 	} else if length < 0x80 {
 		return length, nil
 	} else if length == 0x80 {
@@ -43,7 +43,7 @@ func decode_length(buf *bytes.Buffer) (uint32, error) {
 			{
 				tmp, err = buf.ReadByte()
 				if err != nil {
-					return 0, fmt.Errorf("in reading extended length byte; %s", err)
+					return 0, fmt.Errorf("in reading extended length byte [%w]", err)
 				} else {
 					length = uint32(tmp)
 					return length, err
@@ -55,9 +55,9 @@ func decode_length(buf *bytes.Buffer) (uint32, error) {
 				var n int
 				n, err = buf.Read(tmp2)
 				if err != nil {
-					return 0, fmt.Errorf("in reading extended length %d bytes; %s", n, err)
+					return 0, fmt.Errorf("in reading extended length %d bytes [%w]", n, err)
 				} else if n != int(length) {
-					return 0, fmt.Errorf("got %d buffer length, expected %d", n, length)
+					return 0, &LengthError{n, int(length)}
 				} else {
 					length = 0
 					for i, value := range tmp2 {
@@ -68,7 +68,7 @@ func decode_length(buf *bytes.Buffer) (uint32, error) {
 				}
 			}
 		default:
-			return 0, fmt.Errorf("unsupported length: %d", length)
+			return 0, &UnsupLengthError{int(length)}
 		}
 	}
 }
@@ -93,56 +93,48 @@ func read_tag(c CDT, buf *bytes.Buffer) (err error) {
 	if err != nil {
 		return
 	} else if read_tag != c.TAG() {
-		err = fmt.Errorf("got tag %d, excepted %d", read_tag, c.TAG())
+		err = &TagError{read_tag, c.TAG()}
 		return
 	}
 	return
 }
 
-// read expected tag and length from buffer
-// func read_tag_and_length
-
-// For Integer, Unsigned, Enum
-type CDTOneByte interface {
+//For *NullData | *Integer | *Unsigned | *Enum | *Long | *LongUnsigned...
+type CDTWithoutLength interface{
 	CDT
-	SetFromByte(byte) error
+	SetContents(*bytes.Buffer)error
+	Contents()[]byte
 }
 
-// ForLong, UnsignedLong
-type CDTTwoByte interface {
-	CDT
-	SetFromTwoBytes([]byte) error
+// return Encoding TODO: maybe delete by exist .Encode in every CDT
+func Encode[T CDTWithoutLength](c T)[]byte{
+	ret := []byte{c.TAG()}
+	return append(ret, c.Contents()...)
 }
 
-func SetOneByte(c CDTOneByte, buf *bytes.Buffer) error {
+// Set from byteBuffer to Without Length DLMS types
+func Set(c CDTWithoutLength, buf *bytes.Buffer)error{
 	err := read_tag(c, buf)
 	if err != nil {
 		return err
 	} else {
-		var contents byte
-		contents, err = buf.ReadByte()
-		if err != nil {
-			return fmt.Errorf("not enough value with tag: %d", c.TAG())
-		} else {
-			return c.SetFromByte(contents)
-		}
+		return c.SetContents(buf)
 	}
 }
 
-func SetTwoByte(c CDTTwoByte, buf *bytes.Buffer) error {
-	err := read_tag(c, buf)
-	if err != nil {
-		return err
-	} else {
-		contents := make([]byte, 2)
-		var n int
-		n, err = buf.Read(contents)
-		if err != nil {
-			return fmt.Errorf("not enough value with tag: %d", c.TAG())
-		} else if n != 2 {
-			return fmt.Errorf("expect 2 bytes, got %d", n)
-		} else {
-			return c.SetFromTwoBytes(contents)
-		}
+// return elemnt instance by it tag
+func get_element_constuctor(tag byte) (func() CDT, error) {
+	switch tag {
+	case 0:
+		return func() CDT { return new(NullData) }, nil
+	case 1:
+		return func() CDT { return new(Array) }, nil
+	// case 2: el = new(Structure)
+	// todo more 3..14
+	case 15:
+		return func() CDT { return new(Integer) }, nil
+	// todo more 16..
+	default:
+		return nil, fmt.Errorf("unknown tag %d", tag)
 	}
 }

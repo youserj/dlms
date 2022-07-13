@@ -47,31 +47,29 @@ func (t *Array) Encode() (ret []byte) {
 func (t *Array) Set(buf *bytes.Buffer) error {
 	err := read_tag(t, buf)
 	if err != nil{
-		return fmt.Errorf("in reading tag; %s", err)
+		return fmt.Errorf("in reading tag [%w]", err)
 	} else {
 		var length uint32
 		length, err = decode_length(buf)
 		if err != nil {
-			return fmt.Errorf("in decoding; %s", err)
+			return fmt.Errorf("in decoding [%w]", err)
 		} else {
 			keep := t.Clear()
-			var tag byte
-			tag, err = buf.ReadByte()
-			if err != nil {
-				return fmt.Errorf("in reading tag of type struct; %s", err)
+			if buf.Len() == 0 {
+				return fmt.Errorf("not enouth byte in reading tag of type struct")
 			} else {
 				var creator func() CDT
-				creator, err = get_element_constuctor(tag)
+				creator, err = get_element_constuctor(buf.Bytes()[0])
 				if err != nil {
 					t.values = keep
-					return fmt.Errorf("in finding type array element; %s", err)
+					return fmt.Errorf("in finding type array element [%w]", err)
 				}else{ 
 					for i := 0; i < int(length); i++ {
 						el := creator()
 						err = el.Set(buf)
 						if err != nil {
 							t.values = keep
-							return fmt.Errorf("in reading array element[%d]; %s", i, err)
+							return fmt.Errorf("in reading array element[%d] [%w]", i, err)
 						} else {
 							t.values = append(t.values, el)
 						}
@@ -91,22 +89,6 @@ func (t *Array) restore(els []CDT){
 	t.values = els
 }
 
-func get_element_constuctor(tag byte) (func() CDT, error) {
-	switch tag {
-	case 0:
-		return func() CDT { return new(NullData) }, nil
-	case 1:
-		return func() CDT { return new(Array) }, nil
-	// case 2: el = new(Structure)
-	// todo more 3..14
-	case 15:
-		return func() CDT { return new(Integer) }, nil
-	// todo more 16..
-	default:
-		return nil, fmt.Errorf("unknown tag %d", tag)
-	}
-}
-
 // For all structures containing Array
 type CDTArray interface{
 	CDT
@@ -122,7 +104,7 @@ func SetToArray(c CDTArray, buf *bytes.Buffer) error {
 		var length uint32
 		length, err = decode_length(buf)
 		if err != nil {
-			return fmt.Errorf("in decoding; %s", err)
+			return fmt.Errorf("in decoding [%w]", err)
 		} else {
 			keep := c.Clear()
 			for i := 0; i < int(length); i++ {
@@ -130,7 +112,7 @@ func SetToArray(c CDTArray, buf *bytes.Buffer) error {
 				err = new_el.Set(buf)
 				if err != nil {
 					c.restore(keep)
-					return fmt.Errorf("in reading array element[%d]; %s", i, err)
+					return fmt.Errorf("in reading array element[%d] [%w]", i, err)
 				}
 				c.Append(new_el)
 			}

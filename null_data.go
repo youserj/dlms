@@ -21,10 +21,14 @@ func (NullData) Contents() []byte {
 }
 
 func (c *NullData) Encode() (ret []byte) {
-	ret = []byte{c.TAG()}
-	return
+	return []byte{c.TAG()}
 }
 
 func (c *NullData) Set(buf *bytes.Buffer) error{ 
-	return read_tag(c, buf)
+	return Set(c, buf)
+}
+
+// nothing do it
+func (c *NullData) SetContents(buf *bytes.Buffer)error{
+	return nil
 }
